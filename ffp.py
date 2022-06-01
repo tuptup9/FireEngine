@@ -62,6 +62,7 @@ class FFP:
           # The node is disconnected from the rest of the graph
           for j in range(len(self.graph[node])):
             self.graph[node][j] = 0
+            self.graph[j][node] = 0
           if (debug):
             print("\tt" + str(t) + ": A firefighter protects node " + str(node))            
       # It spreads the fire among the unprotected nodes
@@ -77,6 +78,7 @@ class FFP:
               self.state[j] = -1
               # The edge between the nodes is removed (it will no longer be used)
               self.graph[i][j] = 0
+              self.graph[j][i] = 0
               if (debug):
                 print("\tt" + str(t) + ": Fire spreads to node " + str(j))     
       t = t + 1
@@ -104,12 +106,10 @@ class FFP:
           # the nodes directly connected to a node on fire
           for j in range(len(self.graph[i])):
             if (self.graph[i][j] == 1 and self.state[j] == -1):
-              value = sum(self.graph[i])
-              #print("\tNode (LDEG) " + str(i) + " = " + str(value))
+              value = sum(self.graph[i])              
               break
         elif (heuristic == "GDEG"):        
-          value = sum(self.graph[i])
-          #print("\tNode (GDEG) " + str(i) + " = " + str(value))
+          value = sum(self.graph[i])          
         else:
           print("=====================")
           print("Critical error at FFP.__nextNode.")
