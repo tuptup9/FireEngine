@@ -196,7 +196,6 @@ class HyperHeuristic:
     self.model = keras.models.load_model('volt.hdf5')
     self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss='categorical_crossentropy',
                    metrics='accuracy')
-    self.model.summary()
     if (heuristics):
       self.heuristics = heuristics.copy()
     else:
@@ -219,6 +218,7 @@ class HyperHeuristic:
   # Returns the string representation of this hyper-heuristic 
   def __str__(self):
     print("Running MobileNetV2 \n")
+    self.model.summary()
     print("Heuristics: "+str(self.heuristics))
 
 # A dummy hyper-heuristic for testing purposes.
