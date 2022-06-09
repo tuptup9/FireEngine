@@ -1,5 +1,7 @@
 import random
 import math
+from tensorflow import keras # This is our hyperheuristic's framework
+import numpy as np
 
 # Provides the methods to create and solve the firefighter problem
 class FFP:
@@ -7,13 +9,13 @@ class FFP:
   # Constructor
   #   fileName = The name of the file that contains the FFP instance
   def __init__(self, fileName):
-    file = open(fileName, "r")    
-    text = file.read()    
+    file = open(fileName, "r")
+    text = file.read()
     tokens = text.split()
     seed = int(tokens.pop(0))
     self.n = int(tokens.pop(0))
-    model = int(tokens.pop(0))  
-    int(tokens.pop(0)) # Ignored
+    model = int(tokens.pop(0))
+    int(tokens.pop(0))  # Ignored
     # self.state contains the state of each node
     #    -1 On fire
     #     0 Available for analysis
@@ -22,15 +24,15 @@ class FFP:
     nbBurning = int(tokens.pop(0))
     for i in range(nbBurning):
       b = int(tokens.pop(0))
-      self.state[b] = -1      
-    self.graph = []    
+      self.state[b] = -1
+    self.graph = []
     for i in range(self.n):
       self.graph.append([0] * self.n);
     while tokens:
       x = int(tokens.pop(0))
       y = int(tokens.pop(0))
       self.graph[x][y] = 1
-      self.graph[y][x] = 1    
+      self.graph[y][x] = 1
 
   # Solves the FFP by using a given method and a number of firefighters
   #   method = Either a string with the name of one available heuristic or an object of class HyperHeuristic
@@ -181,23 +183,20 @@ class FFP:
           text += "\t" + str(i) + " - " + str(j) + "\n"
     return text
 
+
 # Provides the methods to create and use hyper-heuristics for the FFP
-# This is a class you must extend it to provide the actual implementation
+# This class loads the trained model and then determines which heuristic to use based on the
+# predicted best heuristic to minimize nodes in danger.
 class HyperHeuristic:
 
   # Constructor
   #   features = A list with the names of the features to be used by this hyper-heuristic
   #   heuristics = A list with the names of the heuristics to be used by this hyper-heuristic
-  def __init__(self, features, heuristics):
-    if (features):
-      self.features = features.copy()
-    else:
-      print("=====================")
-      print("Critical error at HyperHeuristic.__init__.")
-      print("The list of features cannot be empty.")
-      print("The system will halt.")
-      print("=====================")
-      exit(0)
+  def __init__(self, heuristics):
+    self.model = keras.models.load_model('volt.hdf5')
+    self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss='categorical_crossentropy',
+                   metrics='accuracy')
+    self.model.summary()
     if (heuristics):
       self.heuristics = heuristics.copy()
     else:
@@ -211,21 +210,16 @@ class HyperHeuristic:
   # Returns the next heuristic to use
   #   problem = The FFP instance being solved
   def nextHeuristic(self, problem):
-    print("=====================")
-    print("Critical error at HyperHeuristic.nextHeuristic.")
-    print("The method has not been overriden by a valid subclass.")
-    print("The system will halt.")
-    print("=====================")
-    exit(0)
+    heuristic = self.model.predict(problem, verbose=0) # Predicts the heuristic using MobileNetV2
+    heuristic = np.argmax(heuristic) # Gets the index of the best prediction, where the prediction is in the form
+                                     # [w x y z]
+    heuristic = self.heuristics[heuristic] # then, uses that index to determine which heuristic to return
+    return heuristic
 
   # Returns the string representation of this hyper-heuristic 
   def __str__(self):
-    print("=====================")
-    print("Critical error at HyperHeuristic.__str__.")
-    print("The method has not been overriden by a valid subclass.")
-    print("The system will halt.")
-    print("=====================")
-    exit(0)
+    print("Running MobileNetV2 \n")
+    print("Heuristics: "+str(self.heuristics))
 
 # A dummy hyper-heuristic for testing purposes.
 # The hyper-heuristic creates a set of randomly initialized rules.
@@ -282,22 +276,3 @@ class DummyHyperHeuristic(HyperHeuristic):
     distance = math.sqrt(distance)
     return distance
 
-# Tests
-# =====================
-
-fileName = "instances/BBGRL/50_ep0.2_0_gilbert_1.in"
-# Solves the problem using heuristic LDEG and one firefighter
-problem = FFP(fileName)
-print("LDEG = " + str(problem.solve("LDEG", 1, False)))
-
-# Solves the problem using heuristic GDEG and one firefighter
-problem = FFP(fileName)
-print("GDEG = " + str(problem.solve("GDEG", 1, False)))
-
-# Solves the problem using a randomly generated dummy hyper-heuristic
-problem = FFP(fileName)
-seed = random.randint(0, 1000)
-print(seed)
-hh = DummyHyperHeuristic(["EDGE_DENSITY", "BURNING_NODES", "NODES_IN_DANGER"], ["LDEG", "GDEG"], 2, seed)
-print(hh)
-print("Dummy HH = " + str(problem.solve(hh, 1, False)))
