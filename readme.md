@@ -1,4 +1,4 @@
-# The Firefighter Problem Hyper-heuristic Solver (FFPHHS)
+# The Mobile(Net) Firefighter Hyper-heuristic: FireEngine
 
 For further information about the solver, the features, the heuristics, and the problem representation, you may check this repository here: https://github.com/jcobayliss/FFPHHS , they are unchanged.
 
