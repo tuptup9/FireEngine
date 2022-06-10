@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import os
+from singlerun import *
 
 
 ###
@@ -58,37 +59,16 @@ def load_all_data(dims):
         graph = preprocess(graph, dims)
         graph = np.expand_dims(graph, axis=0)
         data = np.append(data, graph, axis=0)
-        gt = np.append(gt, get_heuristic(graph))
+        mid = FFP("instances/GBRL/" + file)
+        gt = np.append(gt, winner(mid))
     files = os.listdir("instances/BBGRL/")
     for file in files:
         graph = construct("instances/BBGRL/" + file)
         graph = preprocess(graph, dims)
         graph = np.expand_dims(graph, axis=0)
         data = np.append(data, graph, axis=0)
-        gt = np.append(gt, get_heuristic(graph))
+        mid = FFP("instances/BBGRL/" + file)
+        gt = np.append(gt, winner(mid))
     data = np.delete(data, 0, 0)
     np.save('graphs_matrices', data)
     np.save('graph_gt',gt)
-
-
-# Split into train/val/test sets
-# We have relatively few data points (about 400), so we opted for a 80/10/10
-# split.
-def generate_splits(data, gt):
-    total_samples = np.shape(data)[0]
-    total80 = np.floor(total_samples * 0.8).astype('int')
-    total10 = np.floor(total_samples * 0.1).astype('int')
-    # Split is 80/20/20
-    train_x = data[0:total80, :, :]
-    train_y = gt[0:total80]
-    val_x = data[total80:total80 + total10, :, :]
-    val_y = gt[total80:total80 + total10]
-    test_x = data[total80 + total10:total80 + total10 * 2, :, :]
-    test_y = gt[total80 + total10:total80 + total10 * 2]
-    return train_x, train_y, val_x, val_y, test_x, test_y
-
-
-# TODO: Add the actual function
-# Placeholder function for groundtruth generation
-def get_heuristic(graph):
-    return 1

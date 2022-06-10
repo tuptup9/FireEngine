@@ -2,6 +2,7 @@ import random
 import math
 from tensorflow import keras # This is our hyperheuristic's framework
 import numpy as np
+from data import *
 
 # Provides the methods to create and solve the firefighter problem
 class FFP:
@@ -193,8 +194,8 @@ class HyperHeuristic:
   #   features = A list with the names of the features to be used by this hyper-heuristic
   #   heuristics = A list with the names of the heuristics to be used by this hyper-heuristic
   def __init__(self, heuristics):
-    self.model = keras.models.load_model('volt.hdf5')
-    self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), loss='categorical_crossentropy',
+    self.model = keras.models.load_model('fireEngine.hdf5')
+    self.model.compile(optimizer=keras.optimizers.Adam(learning_rate=1e-4), loss='categorical_crossentropy',
                    metrics='accuracy')
     if (heuristics):
       self.heuristics = heuristics.copy()
@@ -209,7 +210,10 @@ class HyperHeuristic:
   # Returns the next heuristic to use
   #   problem = The FFP instance being solved
   def nextHeuristic(self, problem):
-    heuristic = self.model.predict(problem, verbose=0) # Predicts the heuristic using MobileNetV2
+    hgraph = np.array(problem.graph)
+    hgraph = preprocess(hgraph,(516,516))
+    hgraph = np.expand_dims(hgraph,axis=0)
+    heuristic = self.model.predict(hgraph, verbose=0) # Predicts the heuristic using MobileNetV2
     heuristic = np.argmax(heuristic) # Gets the index of the best prediction, where the prediction is in the form
                                      # [w x y z]
     heuristic = self.heuristics[heuristic] # then, uses that index to determine which heuristic to return
@@ -218,8 +222,7 @@ class HyperHeuristic:
   # Returns the string representation of this hyper-heuristic 
   def __str__(self):
     print("Running MobileNetV2 \n")
-    self.model.summary()
-    print("Heuristics: "+str(self.heuristics))
+    return "Heuristics: "+str(self.heuristics)
 
 # A dummy hyper-heuristic for testing purposes.
 # The hyper-heuristic creates a set of randomly initialized rules.
@@ -233,7 +236,8 @@ class DummyHyperHeuristic(HyperHeuristic):
   #   heuristics = A list with the names of the heuristics to be used by this hyper-heuristic
   #   nbRules = The number of rules to be contained in this hyper-heuristic  
   def __init__(self, features, heuristics, nbRules, seed):
-    super().__init__(features, heuristics)
+    self.features = features.copy()
+    self.heuristics = heuristics.copy()
     random.seed(seed)
     self.conditions = []
     self.actions = []
@@ -276,3 +280,22 @@ class DummyHyperHeuristic(HyperHeuristic):
     distance = math.sqrt(distance)
     return distance
 
+
+# Tests
+# =====================
+
+fileName = "instances/BBGRL/50_ep0.2_0_gilbert_1.in"
+
+# Solves the problem using our method hyper-heuristic
+problem = FFP(fileName)
+seed = random.randint(0, 1000)
+print(seed)
+hh = HyperHeuristic(["LDEG", "GDEG"])
+print("FireEngine = " + str(problem.solve(hh, 1, False)))
+
+# Solves the problem using our method hyper-heuristic
+problem = FFP(fileName)
+seed = random.randint(0, 1000)
+print(seed)
+hh = DummyHyperHeuristic(["EDGE_DENSITY", "BURNING_NODES", "NODES_IN_DANGER"], ["LDEG", "GDEG"], 2, seed)
+print("Dummy = " + str(problem.solve(hh, 1, False)))

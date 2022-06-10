@@ -18,10 +18,10 @@ from tensorflow.keras import callbacks  # Used for checkpoints and early stoppin
 
 
 ### Parameters
-dims = (256, 256)  # Size of graph (will resize to this if necessary)
+dims = (516, 516)  # Size of graph (will resize to this if necessary)
 batch = 3
 seed = 123  # Seed for the random operations
-output_size = 4  # Heuristics to be used
+output_size = 2  # Heuristics to be used
 epochs = 50  # How many training epochs (max)? Note that we set early-stopping to true.
 
 ### Model
@@ -46,46 +46,33 @@ classifier.summary()
 # load_all_data(dims) # Run to generate save file from dataset
 data = np.load('graphs_matrices.npy')
 gt = np.load('graph_gt.npy')
-gt = tf.keras.utils.to_categorical(gt, num_classes=4)
-[train_x, train_y, val_x, val_y, test_x, test_y] = generate_splits(data, gt)
+gt = tf.keras.utils.to_categorical(gt, num_classes=output_size)
 
 ### Training
 # Callbacks
 model_checkpoint = callbacks.ModelCheckpoint(
-    'volt.hdf5',
-    monitor='val_loss',
+    'fireEngine.hdf5',
+    monitor='loss',
     verbose=1,
     save_best_only=True,
     save_freq="epoch"
 )
-log_dir = "F:\\Biggums Filus\\Teravolt\\logs\\fit\\volt\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+log_dir = "F:\\Biggums Filus\\Teravolt\\logs\\fit\\fe\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-early_callback = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=5)
 # In order, the callbacks are:
 # - Save the best model every epoch
 # - Save logs for tensorboard
-# - Stop early if the model shows no further improvement
-callbacks = [model_checkpoint, tensorboard_callback, early_callback]
+callbacks = [model_checkpoint, tensorboard_callback]
 
 # Begin training
 classifier.fit(
-    x=train_x,
-    y=train_y,
+    x=data,
+    y=gt,
     batch_size=batch,
     epochs=epochs,
     verbose=1,
     callbacks=callbacks,
-    validation_data=(val_x, val_y),
+    validation_split=0.05,
     shuffle=True,
 )
 
-# Testing the model
-log_dir = "F:\\Biggums Filus\\Teravolt\\logs\\test\\volt\\" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-classifier.evaluate(
-    x=test_x,
-    y=test_y,
-    verbose=2,
-    batch_size=1,
-    callbacks=tensorboard_callback,
-)
